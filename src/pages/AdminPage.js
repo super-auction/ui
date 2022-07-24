@@ -7,7 +7,7 @@ import { CONTRACT_ABI, CONTRACT_ADDRESS, toWei } from '../lib/utils'
 export default function AdminPage() {
     const [price, setPrice] = useState(0.01)
     const [seller, setSeller] = useState('0xAba72FdecAe3C3B476e972599cbe8E29DC89dDBA')
-    const [url, setUrl] = useState('http:example.com/product/1')
+    const [url, setUrl] = useState('https://example.com/product/1')
     const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10))
     const [endDate, setEndDate] = useState (new Date().toISOString().slice(0, 10))
 

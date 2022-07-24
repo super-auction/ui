@@ -2,16 +2,20 @@ import React, { useState, useEffect } from 'react';
 import Page from '../components/Page'
 import { useParams } from "react-router-dom";
 
-import { Box, Button, TextField } from '@mui/material'
+import { Box, Button, TextField, Alert } from '@mui/material'
 
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemAvatar from '@mui/material/ListItemAvatar';
 import Avatar from '@mui/material/Avatar';
-import ImageIcon from '@mui/icons-material/Image';
-import WorkIcon from '@mui/icons-material/Work';
-import BeachAccessIcon from '@mui/icons-material/BeachAccess';
+
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import StorefrontIcon from '@mui/icons-material/Storefront';
+import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
+import PersonIcon from '@mui/icons-material/Person';
+import SportsScoreIcon from '@mui/icons-material/SportsScore';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 
 import { useContractRead, useContractWrite, useFeeData, useAccount } from 'wagmi'
 
@@ -20,11 +24,11 @@ import { CONTRACT_ABI, CONTRACT_ADDRESS, toEth, toWei, formatDate, formatNumber 
 
 export default function ViewProductPage() {
     const { id: pageId } = useParams()
-    const [ productId, setProductId ] = useState(0)
+    const [ productId, setProductId ] = useState()
     const [ bidPrice, setBidPrice ] = useState(0)
 
     const feeData = useFeeData({
-        watch: true,
+        watch: false,
         cacheTime: 2_000,
     })
 
@@ -41,6 +45,8 @@ export default function ViewProductPage() {
         functionName: 'getHighestBid',
         args: [productId]
     })
+
+
 
     const { write: execWriteBid } = useContractWrite({
         addressOrName: CONTRACT_ADDRESS,
@@ -59,7 +65,6 @@ export default function ViewProductPage() {
         }
     })
 
-    console.log('bidprice', bidPrice)
 
     const { write: execWriteClaimProduct } = useContractWrite({
         addressOrName: CONTRACT_ADDRESS,
@@ -67,7 +72,7 @@ export default function ViewProductPage() {
         functionName: 'claimProduct',
         args: [productId],
         overrides: {
-            value: toWei(`${toEth(highestBid.bidAmount)}`),
+            value: toWei(`${toEth(highestBid?.bidAmount || 0)}`),
             gasLimit: 500000,
             gasPrice: feeData?.gasPrice || 0
         },
@@ -79,13 +84,23 @@ export default function ViewProductPage() {
         }
     })
 
-    const account = useAccount({
-        onConnect({ address, connector, isReconnected }) {
-            console.log('Connected', { address, connector, isReconnected })
-        }
-    })
+    const account = useAccount();
 
-    console.log(account)
+    const { data: productUrl } = useContractRead({
+        enabled: true,
+        addressOrName: CONTRACT_ADDRESS,
+        contractInterface: CONTRACT_ABI,
+        functionName: 'getProductUrl',
+        args: [productId],
+        overrides: {
+            from: account?.address
+        },
+        onMutate({args}) {
+            console.log('getProductUrl args', args)
+        },
+    })
+    console.log('productUrl', productUrl)
+
 
     useEffect(() => {
         if (pageId) {
@@ -94,7 +109,7 @@ export default function ViewProductPage() {
     }, [pageId])
 
     useEffect(() => {
-        if (productAuction) {
+        if (productAuction && highestBid) {
             const initPrice = +formatNumber(productAuction.initialPrice)
             const highBid = +formatNumber(highestBid.bidAmount)
 
@@ -114,7 +129,7 @@ export default function ViewProductPage() {
                 <ListItem>
                     <ListItemAvatar>
                     <Avatar>
-                        <ImageIcon />
+                        <AttachMoneyIcon />
                     </Avatar>
                     </ListItemAvatar>
                     <ListItemText primary="Initial Price" secondary={formatNumber(productAuction?.initialPrice)} />
@@ -122,7 +137,15 @@ export default function ViewProductPage() {
                 <ListItem>
                     <ListItemAvatar>
                     <Avatar>
-                        <ImageIcon />
+                        <StorefrontIcon />
+                    </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText primary="Seller" secondary={productAuction?.seller} />
+                </ListItem>
+                <ListItem>
+                    <ListItemAvatar>
+                    <Avatar>
+                        <MonetizationOnIcon />
                     </Avatar>
                     </ListItemAvatar>
                     <ListItemText primary="Highest Bid Price" secondary={formatNumber(highestBid?.bidAmount)} />
@@ -130,7 +153,7 @@ export default function ViewProductPage() {
                 <ListItem>
                     <ListItemAvatar>
                     <Avatar>
-                        <ImageIcon />
+                        <PersonIcon />
                     </Avatar>
                     </ListItemAvatar>
                     <ListItemText primary="Highest Bid Owner" secondary={highestBid?.owner} />
@@ -139,7 +162,7 @@ export default function ViewProductPage() {
                 <ListItem>
                     <ListItemAvatar>
                     <Avatar>
-                        <WorkIcon />
+                        <CalendarMonthIcon />
                     </Avatar>
                     </ListItemAvatar>
                     <ListItemText primary="Start Bid" secondary={formatDate(productAuction?.bidStart)} />
@@ -147,7 +170,7 @@ export default function ViewProductPage() {
                 <ListItem>
                     <ListItemAvatar>
                     <Avatar>
-                        <BeachAccessIcon />
+                        <SportsScoreIcon />
                     </Avatar>
                     </ListItemAvatar>
                     <ListItemText primary="End Date" secondary={formatDate(productAuction?.bidEnd)}/>
@@ -178,6 +201,10 @@ export default function ViewProductPage() {
             <small>
                 <strong>*Claim:</strong>You can claim this product if you are the owner of the highest bid
             </small>
+
+            <p>
+                {account?.address === highestBid?.owner && <Alert severity="success">Product URL: {productUrl}</Alert>}
+            </p>
         </Page>
     )
 }
