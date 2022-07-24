@@ -4,11 +4,18 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
+import { BrowserRouter } from "react-router-dom";
+import { WagmiConfig } from 'wagmi'
+import { client } from './lib/wallet/client'
+
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-  <React.StrictMode>
+  <WagmiConfig client={client}>
+  <BrowserRouter>
     <App />
-  </React.StrictMode>
+  </BrowserRouter>
+</WagmiConfig>
 );
 
 // If you want to start measuring performance in your app, pass a function
